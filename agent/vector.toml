@@ -1,0 +1,84 @@
+# ------------------------------------------------------------------------------
+# Vector Configuration for LogAnalyzer (QA Environment)
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# 1. SOURCES
+# ------------------------------------------------------------------------------
+
+# -- A. Host Metrics (CPU, RAM, Disk, Network) --
+[sources.host_metrics]
+type = "host_metrics"
+collectors = ["cpu", "memory", "disk", "network"]
+scrape_interval_secs = 15
+
+# -- B. Nginx Access Logs --
+[sources.nginx_logs]
+type = "file"
+include = ["/var/log/nginx/access.log"]
+read_from = "end"
+
+# -- C. Ubuntu Syslog --
+[sources.syslog]
+type = "file"
+include = ["/var/log/syslog"]
+read_from = "end"
+
+# ------------------------------------------------------------------------------
+# 2. TRANSFORMS (Static Tagging at Source)
+# ------------------------------------------------------------------------------
+
+# -- Tag Metrics --
+[transforms.tag_metrics]
+type = "remap"
+inputs = ["host_metrics"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "host_metrics"
+'''
+
+# -- Tag Nginx Logs --
+[transforms.tag_nginx]
+type = "remap"
+inputs = ["nginx_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "nginx"
+  .level = "INFO" # Default level for access logs
+'''
+
+# -- Tag Syslog --
+[transforms.tag_syslog]
+type = "remap"
+inputs = ["syslog"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "syslog"
+  .level = "INFO"
+'''
+
+# ------------------------------------------------------------------------------
+# 3. SINKS (Output to LogAnalyzer Backend API)
+# ------------------------------------------------------------------------------
+
+[sinks.loganalyzer_backend]
+type = "http"
+inputs = ["tag_metrics", "tag_nginx", "tag_syslog"]
+# Pointing to the Tailscale IP or Docker host of the Backend
+uri = "http://localhost:3001/api/ingest"
+encoding.codec = "json"
+method = "post"
+compression = "gzip"
+
+[sinks.loganalyzer_backend.batch]
+max_events = 1000
+timeout_secs = 5
