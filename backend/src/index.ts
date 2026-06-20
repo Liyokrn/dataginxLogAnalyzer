@@ -1,12 +1,18 @@
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import * as dotenv from 'dotenv';
 import { clickhouse, checkConnection } from './db';
 import { pipelineProcessor } from './pipeline';
+import { queryParser } from './QueryParser';
 
 dotenv.config();
 
 const server = Fastify({
   logger: true,
+});
+
+server.register(cors, { 
+  origin: true // In production, restrict this to the frontend URL
 });
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -26,10 +32,7 @@ server.post('/api/ingest', async (request, reply) => {
 
     for (const event of events) {
       if (event.service_type === 'host_metrics') {
-        // Simple heuristic for Metric mapping
         const timestamp = event.timestamp ? new Date(event.timestamp).toISOString().replace('T', ' ').substring(0, 19) : new Date().toISOString().replace('T', ' ').substring(0, 19);
-        
-        // Example: Vector might send 'cpu_percent' as a field
         const metricKeys = ['cpu_percent', 'memory_used_bytes', 'disk_used_percent', 'network_rx_bytes', 'cpu', 'memory'];
         
         for (const [key, value] of Object.entries(event)) {
@@ -45,14 +48,13 @@ server.post('/api/ingest', async (request, reply) => {
           }
         }
       } else {
-        // It's a Log
         const timestamp = event.timestamp ? new Date(event.timestamp).getTime() : Date.now();
         const { extracted_module, dynamic_labels } = pipelineProcessor.process(event);
         
         server.log.info(`[Pipeline] Extracted module: "${extracted_module}" from event.`);
 
         logRows.push({
-          timestamp: timestamp, // ClickHouse DateTime64 accepts epoch ms
+          timestamp: timestamp,
           project_id: event.project_id || 'unknown',
           env: event.env || 'unknown',
           os: event.os || 'unknown',
@@ -66,7 +68,6 @@ server.post('/api/ingest', async (request, reply) => {
       }
     }
 
-    // Insert Logs
     if (logRows.length > 0) {
       await clickhouse.insert({
         table: 'loganalyzer.logs_main',
@@ -75,7 +76,6 @@ server.post('/api/ingest', async (request, reply) => {
       });
     }
 
-    // Insert Metrics
     if (metricRows.length > 0) {
       await clickhouse.insert({
         table: 'loganalyzer.hardware_metrics',
@@ -89,6 +89,44 @@ server.post('/api/ingest', async (request, reply) => {
   } catch (err) {
     server.log.error(err);
     return reply.code(500).send({ status: 'error', message: 'Internal Server Error' });
+  }
+});
+
+server.post('/api/logs/search', async (request, reply) => {
+  try {
+    const { query = '', timeRange, limit = 100 } = request.body as any;
+
+    const { whereClause, queryParams } = queryParser.parse(query);
+    
+    // Add timeRange bounds if provided
+    let finalWhere = whereClause;
+    if (timeRange?.start) {
+      finalWhere += ' AND timestamp >= {start: DateTime64(3, \'UTC\')}';
+      queryParams.start = timeRange.start;
+    }
+    if (timeRange?.end) {
+      finalWhere += ' AND timestamp <= {end: DateTime64(3, \'UTC\')}';
+      queryParams.end = timeRange.end;
+    }
+
+    const clickhouseQuery = `
+      SELECT * FROM loganalyzer.logs_main 
+      WHERE ${finalWhere} 
+      ORDER BY timestamp DESC 
+      LIMIT ${Number(limit)}
+    `;
+
+    const resultSet = await clickhouse.query({
+      query: clickhouseQuery,
+      query_params: queryParams,
+      format: 'JSONEachRow'
+    });
+
+    const dataset = await resultSet.json();
+    return reply.send(dataset);
+  } catch (err) {
+    server.log.error(err);
+    return reply.code(500).send({ status: 'error', message: 'Search failed' });
   }
 });
 
