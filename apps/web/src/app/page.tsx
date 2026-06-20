@@ -1,89 +1,85 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import * as React from "react"
+import { Activity, Cpu, HardDrive, Network } from "lucide-react"
+import { MetricChart } from "@/components/MetricChart"
 
-export default function Home() {
-  const [isLightMode, setIsLightMode] = useState(false);
+// Mock data generator
+const generateMockData = (count: number, min: number, max: number) => {
+  return Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1) + min))
+}
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isLightMode) {
-      root.classList.add("light");
-    } else {
-      root.classList.remove("light");
-    }
-  }, [isLightMode]);
+const mockTimes = Array.from({ length: 20 }, (_, i) => `10:${i.toString().padStart(2, '0')}`)
 
+export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors duration-300 font-sans flex flex-col items-center justify-center p-8">
-      <div className="w-full max-w-4xl bg-card rounded-xl border border-border p-8 shadow-2xl relative overflow-hidden">
-        {/* Decorative thin top indicator */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-ok via-warn to-critical opacity-60" />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-gray-500">
+          Real-time observability and infrastructure metrics.
+        </p>
+      </div>
 
-        {/* Header bar */}
-        <div className="flex justify-between items-center mb-12">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight mb-1">LogAnalyzer</h1>
-            <p className="text-sm opacity-60">Observability & Log Processing Platform</p>
-          </div>
-          
-          <button
-            onClick={() => setIsLightMode(!isLightMode)}
-            className="px-4 py-2 rounded-xl bg-accent-bg text-accent-fg hover:opacity-85 text-xs font-medium border border-border transition-all cursor-pointer"
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[
+          { title: "CPU Usage", icon: Cpu, value: "45%", status: "text-(--status-ok)", color: "#10B981", data: generateMockData(20, 30, 60) },
+          { title: "Memory", icon: Activity, value: "72%", status: "text-(--status-warn)", color: "#F59E0B", data: generateMockData(20, 60, 80) },
+          { title: "Network", icon: Network, value: "1.2 GB/s", status: "text-(--status-ok)", color: "#3B82F6", data: generateMockData(20, 0.8, 1.5) },
+          { title: "Storage", icon: HardDrive, value: "92%", status: "text-(--status-critical)", color: "#EF4444", data: generateMockData(20, 90, 95) },
+        ].map((stat) => (
+          <div
+            key={stat.title}
+            className="rounded-xl border border-(--border) bg-(--card) p-6 flex flex-col h-40"
           >
-            Switch to {isLightMode ? "Dark Mode" : "Light Mode"}
-          </button>
-        </div>
-
-        {/* Demo grid showing the color palette */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-accent-bg border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold mb-2 opacity-80">Design System</h2>
-            <p className="text-xs opacity-65 leading-relaxed">
-              Minimalist iOS-style aesthetic with fine 1px dividers, soft 12px corners, and premium dark/light HSL palettes.
-            </p>
-          </div>
-
-          <div className="bg-accent-bg border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold mb-2 opacity-80">Tech Stack</h2>
-            <p className="text-xs opacity-65 leading-relaxed">
-              Scaffolded with Next.js, React, Tailwind CSS v4, and pnpm. Designed for sub-second log rendering.
-            </p>
-          </div>
-
-          <div className="bg-accent-bg border border-border rounded-xl p-5">
-            <h2 className="text-sm font-semibold mb-2 opacity-80">Platform Status</h2>
-            <div className="flex flex-col gap-2 mt-2">
-              <div className="flex items-center gap-2 text-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-ok" />
-                <span>Ingestion Pipeline: OK</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-warn" />
-                <span>PHP Wildcards: Warn (Pending)</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-critical" />
-                <span>Kubernetes Discovery: Error (Scaffold Phase)</span>
-              </div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-500">{stat.title}</h3>
+              <stat.icon className={`h-4 w-4 ${stat.status}`} />
+            </div>
+            <div className="flex items-baseline text-2xl font-semibold mb-4">
+              {stat.value}
+            </div>
+            <div className="flex-1 -mx-2 -mb-2">
+              <MetricChart data={stat.data} times={mockTimes} color={stat.color} title={stat.title} />
             </div>
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Mononspace Console Preview */}
-        <div className="bg-[#05080F] border border-border rounded-xl p-6 font-mono text-sm leading-relaxed overflow-x-auto shadow-inner">
-          <div className="flex items-center justify-between mb-4 border-b border-border pb-2 opacity-50 text-xs">
-            <span>console.log</span>
-            <span>systemd-journal</span>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-(--border) bg-(--card) p-6">
+          <h3 className="text-sm font-medium mb-4">Anomaly Heatmap</h3>
+          <div className="h-64 flex items-center justify-center border border-(--border) border-dashed rounded-lg text-gray-500">
+            [ECharts Heatmap Placeholder]
           </div>
-          <div className="space-y-1">
-            <p className="text-ok/90">[2026-06-19 15:46:05] [INFO] Starting LogAnalyzer agent ingestion daemon...</p>
-            <p className="text-[#A5B4FC]">{"[2026-06-19 15:46:06] [DEBUG] Matching Nginx paths on pattern `/var/www/({modulo})`"}</p>
-            <p className="text-warn/90">[2026-06-19 15:46:07] [WARN] Found concurrent PHP installations: PHP 7.4, 8.2, 8.4</p>
-            <p className="text-ok/90">[2026-06-19 15:46:08] [INFO] Watching wildcard php*-fpm.log logs successfully.</p>
+        </div>
+        <div className="rounded-xl border border-(--border) bg-(--card) p-6">
+          <h3 className="text-sm font-medium mb-4">Global Alerts</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-(--status-critical)" />
+                <div className="text-sm font-medium">Storage critical on node-03</div>
+              </div>
+              <div className="text-xs text-gray-500">2 min ago</div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-(--status-warn)" />
+                <div className="text-sm font-medium">High memory usage on Auth Service</div>
+              </div>
+              <div className="text-xs text-gray-500">15 min ago</div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-2 w-2 rounded-full bg-(--status-ok)" />
+                <div className="text-sm font-medium">New deployment: Payment Gateway v2.4</div>
+              </div>
+              <div className="text-xs text-gray-500">1 hr ago</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
