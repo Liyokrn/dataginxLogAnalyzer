@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import * as dotenv from 'dotenv';
 import { clickhouse, checkConnection } from './db';
-import { runPipelineExtractions } from './pipeline';
+import { pipelineProcessor } from './pipeline';
 
 dotenv.config();
 
@@ -47,7 +47,9 @@ server.post('/api/ingest', async (request, reply) => {
       } else {
         // It's a Log
         const timestamp = event.timestamp ? new Date(event.timestamp).getTime() : Date.now();
-        const { extracted_module, dynamic_labels } = runPipelineExtractions(event);
+        const { extracted_module, dynamic_labels } = pipelineProcessor.process(event);
+        
+        server.log.info(`[Pipeline] Extracted module: "${extracted_module}" from event.`);
 
         logRows.push({
           timestamp: timestamp, // ClickHouse DateTime64 accepts epoch ms
