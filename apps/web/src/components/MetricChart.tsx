@@ -9,9 +9,10 @@ interface MetricChartProps {
   times: string[]
   color: string
   title: string
+  targetTime?: string
 }
 
-export function MetricChart({ data, times, color, title }: MetricChartProps) {
+export function MetricChart({ data, times, color, title, targetTime }: MetricChartProps) {
   const { theme } = useTheme()
   const isDark = theme === "dark" || theme === "system" // simplified
 
@@ -62,6 +63,12 @@ export function MetricChart({ data, times, color, title }: MetricChartProps) {
           },
         },
         data: data,
+        markLine: targetTime ? {
+          symbol: "none",
+          lineStyle: { color: "#EF4444", type: "solid", width: 2 },
+          label: { show: false },
+          data: [{ xAxis: targetTime }]
+        } : undefined,
       },
     ],
   }

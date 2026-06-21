@@ -162,10 +162,24 @@ export default function LogsPage() {
                     <div className={`flex-1 break-all ${levelColor} opacity-90`}>{log.message}</div>
                   </div>
                   {isExpanded && (
-                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-[#0A0E17] border border-(--border) p-4 overflow-x-auto text-gray-300">
-                      <pre className="text-xs">
-                        {JSON.stringify(log.metadata, null, 2)}
-                      </pre>
+                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-[#0A0E17] border border-(--border) p-4 flex flex-col gap-3">
+                      <div className="overflow-x-auto text-gray-300">
+                        <pre className="text-xs">
+                          {JSON.stringify(log.metadata, null, 2)}
+                        </pre>
+                      </div>
+                      <div className="flex justify-end border-t border-(--border) pt-2">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/?correlate_time=${encodeURIComponent(log.timestamp)}&correlate_node=${encodeURIComponent(log.source)}`;
+                          }}
+                          className="flex items-center gap-2 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-900/20 px-3 py-1.5 rounded transition-colors"
+                        >
+                          <Play className="h-3 w-3" />
+                          Correlacionar Métricas
+                        </button>
+                      </div>
                     </div>
                   )}
                 </React.Fragment>

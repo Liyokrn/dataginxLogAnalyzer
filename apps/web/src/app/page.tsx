@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { Activity, Cpu, HardDrive, Network } from "lucide-react"
 import { MetricChart } from "@/components/MetricChart"
 
@@ -9,25 +10,86 @@ const generateMockData = (count: number, min: number, max: number) => {
   return Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1) + min))
 }
 
-const mockTimes = Array.from({ length: 20 }, (_, i) => `10:${i.toString().padStart(2, '0')}`)
+const defaultMockTimes = Array.from({ length: 20 }, (_, i) => `10:${i.toString().padStart(2, '0')}`)
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const searchParams = useSearchParams()
+  const correlateTime = searchParams.get('correlate_time')
+  const correlateNode = searchParams.get('correlate_node')
+
+  const [loading, setLoading] = React.useState(false)
+  const [metricData, setMetricData] = React.useState<any>(null)
+
+  React.useEffect(() => {
+    if (correlateTime && correlateNode) {
+      setLoading(true)
+      fetch('http://localhost:3001/api/metrics/correlate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timestamp: correlateTime,
+          source_node: correlateNode,
+          windowMinutes: 5
+        })
+      })
+      .then(r => r.json())
+      .then(data => setMetricData(data))
+      .catch(err => console.error('Correlate error:', err))
+      .finally(() => setLoading(false))
+    }
+  }, [correlateTime, correlateNode])
+
+  let times = defaultMockTimes
+  let targetTimeFormatted: string | undefined = undefined
+
+  let stats = [
+    { title: "CPU Usage", icon: Cpu, value: "45%", status: "text-(--status-ok)", color: "#10B981", data: generateMockData(20, 30, 60), metricKey: 'cpu_percent' },
+    { title: "Memory", icon: Activity, value: "72%", status: "text-(--status-warn)", color: "#F59E0B", data: generateMockData(20, 60, 80), metricKey: 'memory_used_bytes' },
+    { title: "Network", icon: Network, value: "1.2 GB/s", status: "text-(--status-ok)", color: "#3B82F6", data: generateMockData(20, 0.8, 1.5), metricKey: 'network_rx' },
+    { title: "Storage", icon: HardDrive, value: "92%", status: "text-(--status-critical)", color: "#EF4444", data: generateMockData(20, 90, 95), metricKey: 'disk' },
+  ]
+
+  if (metricData && metricData.metrics) {
+    // Extract unique times
+    const timeSet = new Set<string>()
+    metricData.metrics.forEach((m: any) => {
+      const formatted = new Date(m.timestamp + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timeSet.add(formatted)
+    })
+    times = Array.from(timeSet).sort()
+
+    targetTimeFormatted = new Date(metricData.target_timestamp + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+    // Map metrics to the UI
+    stats = stats.map(stat => {
+      const specificMetrics = metricData.metrics.filter((m: any) => m.metric_name === stat.metricKey)
+      if (specificMetrics.length > 0) {
+        // Group by time mapped to the unique 'times' array
+        const dataArr = times.map(t => {
+          const match = specificMetrics.find((m: any) => new Date(m.timestamp + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === t)
+          return match ? match.value : 0
+        })
+        return { ...stat, data: dataArr }
+      }
+      return stat
+    })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {correlateTime ? `Correlated Metrics: Node ${correlateNode}` : 'Dashboard'}
+        </h1>
         <p className="text-sm text-gray-500">
-          Real-time observability and infrastructure metrics.
+          {correlateTime 
+            ? `Showing ±5 minute window around error at ${targetTimeFormatted}` 
+            : 'Real-time observability and infrastructure metrics.'}
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { title: "CPU Usage", icon: Cpu, value: "45%", status: "text-(--status-ok)", color: "#10B981", data: generateMockData(20, 30, 60) },
-          { title: "Memory", icon: Activity, value: "72%", status: "text-(--status-warn)", color: "#F59E0B", data: generateMockData(20, 60, 80) },
-          { title: "Network", icon: Network, value: "1.2 GB/s", status: "text-(--status-ok)", color: "#3B82F6", data: generateMockData(20, 0.8, 1.5) },
-          { title: "Storage", icon: HardDrive, value: "92%", status: "text-(--status-critical)", color: "#EF4444", data: generateMockData(20, 90, 95) },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.title}
             className="rounded-xl border border-(--border) bg-(--card) p-6 flex flex-col h-40"
@@ -40,7 +102,13 @@ export default function DashboardPage() {
               {stat.value}
             </div>
             <div className="flex-1 -mx-2 -mb-2">
-              <MetricChart data={stat.data} times={mockTimes} color={stat.color} title={stat.title} />
+              <MetricChart 
+                data={stat.data} 
+                times={times} 
+                color={stat.color} 
+                title={stat.title} 
+                targetTime={targetTimeFormatted} 
+              />
             </div>
           </div>
         ))}
@@ -81,5 +149,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <React.Suspense fallback={<div className="p-8 text-center text-gray-500">Loading Dashboard...</div>}>
+      <DashboardContent />
+    </React.Suspense>
   )
 }
