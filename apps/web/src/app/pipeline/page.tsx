@@ -45,7 +45,7 @@ export default function PipelineEditorPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('http://localhost:3001/api/pipeline/test', {
+      const res = await fetch('/api/proxy/pipeline/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: testLog, service_type: serviceType })

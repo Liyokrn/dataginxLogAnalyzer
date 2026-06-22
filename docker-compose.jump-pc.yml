@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # 1. ClickHouse Database (Housed privately inside Docker network)
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: loganalyzer_clickhouse
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    environment:
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-loganalyzer}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-default}
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    networks:
+      - loganalyzer_net
+
+  # 2. LogAnalyzer Backend API (Listening to OpenVPN ingestion and Cloudflare frontend)
+  log-backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: loganalyzer_backend
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - CLICKHOUSE_HOST=http://clickhouse:8123
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-default}
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB:-loganalyzer}
+      - FRONTEND_API_KEY=${FRONTEND_API_KEY}
+      - INGEST_API_KEY=${INGEST_API_KEY}
+    depends_on:
+      - clickhouse
+    networks:
+      - loganalyzer_net
+
+volumes:
+  clickhouse_data:
+
+networks:
+  loganalyzer_net:
+    driver: bridge

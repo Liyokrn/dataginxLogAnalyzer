@@ -38,6 +38,33 @@ server.register(async function (fastify) {
   });
 });
 
+// Authentication middleware
+server.addHook('onRequest', async (request, reply) => {
+  // Allow health checks without auth
+  if (request.url === '/health' || request.url === '/health/') {
+    return;
+  }
+
+  const authHeader = request.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+  // Handle WebSocket token authentication passed as query parameter
+  const queryToken = (request.query as any)?.token;
+  const activeToken = token || queryToken;
+
+  if (request.url.startsWith('/api/ingest')) {
+    const ingestKey = process.env.INGEST_API_KEY;
+    if (!ingestKey || activeToken !== ingestKey) {
+      return reply.code(401).send({ error: 'Unauthorized: Invalid or missing Ingest API Key' });
+    }
+  } else {
+    const frontendKey = process.env.FRONTEND_API_KEY;
+    if (!frontendKey || activeToken !== frontendKey) {
+      return reply.code(401).send({ error: 'Unauthorized: Invalid or missing Frontend API Key' });
+    }
+  }
+});
+
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 

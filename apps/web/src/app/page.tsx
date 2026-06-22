@@ -71,8 +71,8 @@ function DashboardContent() {
     setAnalyticsLoading(true);
     try {
       const [volRes, errRes] = await Promise.all([
-        fetch('http://localhost:3001/api/analytics/volume'),
-        fetch('http://localhost:3001/api/analytics/errors_by_module')
+        fetch('/api/proxy/analytics/volume'),
+        fetch('/api/proxy/analytics/errors_by_module')
       ]);
       const volData = await volRes.json();
       const errData = await errRes.json();
@@ -94,7 +94,8 @@ function DashboardContent() {
   }, []);
 
   React.useEffect(() => {
-    const ws = new WebSocket("ws://localhost:3001/ws");
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001/ws";
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       console.log("[WS] Connected to backend alerts server");
@@ -130,7 +131,7 @@ function DashboardContent() {
   React.useEffect(() => {
     if (correlateTime && correlateNode) {
       setLoading(true)
-      fetch('http://localhost:3001/api/metrics/correlate', {
+      fetch('/api/proxy/metrics/correlate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
