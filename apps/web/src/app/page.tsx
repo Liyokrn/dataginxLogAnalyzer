@@ -12,6 +12,15 @@ const generateMockData = (count: number, min: number, max: number) => {
 
 const defaultMockTimes = Array.from({ length: 20 }, (_, i) => `10:${i.toString().padStart(2, '0')}`)
 
+function formatTimeAgo(isoString: string) {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  return `${diffHours} hr ago`;
+}
+
 function DashboardContent() {
   const searchParams = useSearchParams()
   const correlateTime = searchParams.get('correlate_time')
@@ -19,6 +28,46 @@ function DashboardContent() {
 
   const [loading, setLoading] = React.useState(false)
   const [metricData, setMetricData] = React.useState<any>(null)
+  
+  const [alerts, setAlerts] = React.useState<any[]>([
+    { id: '1', message: "Storage critical on node-03", level: "CRITICAL", timestamp: new Date(Date.now() - 120000).toISOString() },
+    { id: '2', message: "High memory usage on Auth Service", level: "WARNING", timestamp: new Date(Date.now() - 900000).toISOString() },
+    { id: '3', message: "New deployment: Payment Gateway v2.4", level: "INFO", timestamp: new Date(Date.now() - 3600000).toISOString() }
+  ]);
+
+  React.useEffect(() => {
+    const ws = new WebSocket("ws://localhost:3001/ws");
+
+    ws.onopen = () => {
+      console.log("[WS] Connected to backend alerts server");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.event === 'anomaly_detected') {
+          const newAlert = {
+            id: Math.random().toString(),
+            message: `Anomaly on module "${payload.module}": ${payload.issue}`,
+            level: payload.level,
+            timestamp: payload.timestamp,
+            isNew: true
+          };
+          setAlerts(prev => [newAlert, ...prev]);
+        }
+      } catch (err) {
+        console.error("[WS] Error parsing message:", err);
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("[WS] Disconnected from backend alerts server");
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
 
   React.useEffect(() => {
     if (correlateTime && correlateNode) {
@@ -123,28 +172,21 @@ function DashboardContent() {
         </div>
         <div className="rounded-xl border border-(--border) bg-(--card) p-6">
           <h3 className="text-sm font-medium mb-4">Global Alerts</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-(--status-critical)" />
-                <div className="text-sm font-medium">Storage critical on node-03</div>
-              </div>
-              <div className="text-xs text-gray-500">2 min ago</div>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-(--status-warn)" />
-                <div className="text-sm font-medium">High memory usage on Auth Service</div>
-              </div>
-              <div className="text-xs text-gray-500">15 min ago</div>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-(--border) p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-2 w-2 rounded-full bg-(--status-ok)" />
-                <div className="text-sm font-medium">New deployment: Payment Gateway v2.4</div>
-              </div>
-              <div className="text-xs text-gray-500">1 hr ago</div>
-            </div>
+          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+            {alerts.map((alert) => {
+              const bgDotColor = alert.level === 'CRITICAL' ? 'bg-(--status-critical)' : alert.level === 'WARNING' ? 'bg-(--status-warn)' : 'bg-(--status-ok)';
+              const borderHighlight = alert.isNew ? 'border-red-500/80 bg-red-950/20 shadow-[0_0_10px_rgba(239,68,68,0.15)] animate-pulse' : 'border-(--border)';
+              
+              return (
+                <div key={alert.id} className={`flex items-center justify-between rounded-lg border p-4 transition-all duration-500 ${borderHighlight}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2 w-2 rounded-full ${bgDotColor}`} />
+                    <div className="text-sm font-medium">{alert.message}</div>
+                  </div>
+                  <div className="text-xs text-gray-500 whitespace-nowrap ml-4">{formatTimeAgo(alert.timestamp)}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

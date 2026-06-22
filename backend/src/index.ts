@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import websocketPlugin from '@fastify/websocket';
 import * as dotenv from 'dotenv';
 import { clickhouse, checkConnection } from './db';
 import { pipelineProcessor } from './pipeline';
@@ -13,6 +14,28 @@ const server = Fastify({
 
 server.register(cors, { 
   origin: true // In production, restrict this to the frontend URL
+});
+
+server.register(websocketPlugin);
+
+// Keep track of active WebSocket connections
+const connectedSockets = new Set<any>();
+
+server.register(async function (fastify) {
+  fastify.get('/ws', { websocket: true }, (socket, req) => {
+    connectedSockets.add(socket);
+    fastify.log.info('New WebSocket connection established.');
+
+    socket.on('close', () => {
+      connectedSockets.delete(socket);
+      fastify.log.info('WebSocket connection closed.');
+    });
+
+    socket.on('error', (err: any) => {
+      connectedSockets.delete(socket);
+      fastify.log.error(err);
+    });
+  });
 });
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -48,10 +71,11 @@ server.post('/api/ingest', async (request, reply) => {
           }
         }
       } else {
-        const timestamp = event.timestamp ? new Date(event.timestamp).getTime() : Date.now();
-        const { extracted_module, dynamic_labels } = pipelineProcessor.process(event);
+        const { extracted_module, dynamic_labels, level: parsedLevel, timestamp: parsedTimestamp } = pipelineProcessor.process(event);
+        const timestamp = parsedTimestamp || (event.timestamp ? new Date(event.timestamp).getTime() : Date.now());
+        const level = parsedLevel || event.level || 'INFO';
         
-        server.log.info(`[Pipeline] Extracted module: "${extracted_module}" from event.`);
+        server.log.info(`[Pipeline] Extracted module: "${extracted_module}" from event. Level: "${level}", Timestamp: "${timestamp}"`);
 
         logRows.push({
           timestamp: timestamp,
@@ -60,7 +84,7 @@ server.post('/api/ingest', async (request, reply) => {
           os: event.os || 'unknown',
           source_node: event.source_node || 'unknown',
           service_type: event.service_type || 'unknown',
-          level: event.level || 'INFO',
+          level: level,
           extracted_module,
           dynamic_labels,
           message: event.message || JSON.stringify(event),
@@ -89,6 +113,52 @@ server.post('/api/ingest', async (request, reply) => {
   } catch (err) {
     server.log.error(err);
     return reply.code(500).send({ status: 'error', message: 'Internal Server Error' });
+  }
+});
+
+function broadcastAnomaly(extractedModule: string, level: string, issue: string) {
+  const anomaly = {
+    event: 'anomaly_detected',
+    module: extractedModule,
+    issue: issue,
+    level: level,
+    timestamp: new Date().toISOString()
+  };
+  const payloadStr = JSON.stringify(anomaly);
+  server.log.info(`[WS] Broadcasting anomaly: ${payloadStr}`);
+  for (const socket of connectedSockets) {
+    if (socket.readyState === 1) {
+      socket.send(payloadStr);
+    }
+  }
+}
+
+server.post('/api/pipeline/test', async (request, reply) => {
+  try {
+    const { message = '', service_type = '' } = request.body as any;
+    const dummyEvent = { message, service_type };
+    const result = pipelineProcessor.process(dummyEvent);
+    const resolvedLevel = result.level || 'INFO';
+    const timestampStr = result.timestamp ? new Date(result.timestamp).toISOString() : new Date().toISOString();
+
+    if (resolvedLevel === 'ERROR' || resolvedLevel === 'CRITICAL') {
+      broadcastAnomaly(
+        result.extracted_module || 'unknown',
+        resolvedLevel,
+        `Live Test Trigger: Detected ${resolvedLevel} log inside test payload`
+      );
+    }
+
+    return reply.send({
+      success: true,
+      extracted_module: result.extracted_module,
+      dynamic_labels: result.dynamic_labels,
+      level: resolvedLevel,
+      timestamp: timestampStr
+    });
+  } catch (err) {
+    server.log.error(err);
+    return reply.code(500).send({ success: false, error: 'Failed to test pipeline' });
   }
 });
 
@@ -193,6 +263,44 @@ server.post('/api/metrics/correlate', async (request, reply) => {
 server.get('/health', async (request, reply) => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
+
+// Background worker for Alerts Engine running every 1 minute
+setInterval(async () => {
+  try {
+    server.log.info('[Alerts Engine] Running anomaly detection check on ClickHouse...');
+    const query = `
+      SELECT extracted_module, count() as err_count
+      FROM loganalyzer.logs_main
+      WHERE timestamp >= now() - INTERVAL 2 MINUTE
+        AND (level = 'ERROR' OR level = 'CRITICAL')
+        AND extracted_module != ''
+        AND extracted_module != 'unknown'
+      GROUP BY extracted_module
+      HAVING err_count > 5
+    `;
+    
+    let rows: any[] = [];
+    try {
+      const resultSet = await clickhouse.query({
+        query,
+        format: 'JSONEachRow'
+      });
+      rows = await resultSet.json() as any[];
+    } catch (dbErr) {
+      server.log.warn('ClickHouse connection failed or not ready during alerts cron. Skipping database check.');
+    }
+
+    for (const row of rows) {
+      broadcastAnomaly(
+        row.extracted_module,
+        'CRITICAL',
+        `High error rate detected: ${row.err_count} errors in the last 2 minutes`
+      );
+    }
+  } catch (err) {
+    server.log.error(err, 'Error in alerts engine cron job');
+  }
+}, 60000);
 
 const start = async () => {
   try {
