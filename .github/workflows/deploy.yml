@@ -33,7 +33,6 @@ jobs:
               - 'k8s/**'
               - '.github/workflows/deploy.yml'
 
-  # 2. Deploy Backend to Jump PC (ly-wrkspace)
   deploy-backend:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend == 'true' }}
@@ -48,24 +47,18 @@ jobs:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           version: latest
 
-      - name: Install Deploy Tools (rsync & sshpass)
-        run: |
-          sudo apt-get update && sudo apt-get install -y sshpass rsync
-
-      - name: Rsync Backend Files to Jump PC
-        run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" rsync -avz \
-            --exclude 'node_modules' \
-            --exclude '.git' \
-            --exclude '.next' \
-            --exclude 'dist' \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ly@100.84.175.70:/home/ly/workspace/loganalyzer-backend/
-
-      - name: Restart Backend Containers via SSH
-        run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ly@100.84.175.70 \
-            "cd /home/ly/workspace/loganalyzer-backend && echo '${{ secrets.SSH_PASSWORD }}' | sudo -S docker compose -f docker-compose.jump-pc.yml up -d --build"
+      - name: Sync and Deploy via Alpine Container
+        uses: docker://alpine:latest
+        env:
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+        with:
+          entrypoint: /bin/sh
+          args: >
+            -c "
+            apk add --no-cache rsync sshpass openssh-client &&
+            sshpass -p '$SSH_PASSWORD' rsync -avz --exclude 'node_modules' --exclude '.git' --exclude '.next' --exclude 'dist' -e 'ssh -o StrictHostKeyChecking=no' ./ ly@100.84.175.70:/home/ly/workspace/loganalyzer-backend/ &&
+            sshpass -p '$SSH_PASSWORD' ssh -o StrictHostKeyChecking=no ly@100.84.175.70 'cd /home/ly/workspace/loganalyzer-backend && echo \"\$SSH_PASSWORD\" | sudo -S docker compose -f docker-compose.jump-pc.yml up -d --build'
+            "
 
   # 3. Deploy Frontend to Kubernetes Cluster
   deploy-frontend:
