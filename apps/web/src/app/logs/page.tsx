@@ -31,7 +31,7 @@ export default function LogsPage() {
   const fetchLogs = async (searchQuery: string) => {
     setLoading(true)
     try {
-      const res = await fetch('http://localhost:3001/api/logs/search', {
+      const res = await fetch('/api/proxy/logs/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

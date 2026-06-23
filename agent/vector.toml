@@ -12,10 +12,10 @@ type = "host_metrics"
 collectors = ["cpu", "memory", "disk", "network"]
 scrape_interval_secs = 15
 
-# -- B. Nginx Access Logs --
+# -- B. Nginx Logs (Access & Error) --
 [sources.nginx_logs]
 type = "file"
-include = ["/var/log/nginx/access.log"]
+include = ["/var/log/nginx/access.log", "/var/log/nginx/error.log"]
 read_from = "end"
 
 # -- C. Ubuntu Syslog --
@@ -23,6 +23,23 @@ read_from = "end"
 type = "file"
 include = ["/var/log/syslog"]
 read_from = "end"
+
+# -- D. PHP-FPM Logs --
+[sources.php_fpm_logs]
+type = "file"
+include = ["/var/log/php*-fpm.log"]
+read_from = "end"
+
+# -- E. PHP Slow Logs (Multiline) --
+[sources.php_slow_logs]
+type = "file"
+include = ["/var/log/php*-slow.log"]
+read_from = "end"
+
+[sources.php_slow_logs.multiline]
+start_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
+mode = "halt_before"
+condition_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
 
 # ------------------------------------------------------------------------------
 # 2. TRANSFORMS (Static Tagging at Source)
@@ -50,7 +67,7 @@ source = '''
   .os = "linux"
   .source_node = "Q1"
   .service_type = "nginx"
-  .level = "INFO" # Default level for access logs
+  .level = "INFO" # Default level for access logs, error logs will override this in backend pipeline
 '''
 
 # -- Tag Syslog --
@@ -66,15 +83,41 @@ source = '''
   .level = "INFO"
 '''
 
+# -- Tag PHP-FPM Logs --
+[transforms.tag_php_fpm]
+type = "remap"
+inputs = ["php_fpm_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "php-fpm"
+  .level = "INFO"
+'''
+
+# -- Tag PHP Slow Logs --
+[transforms.tag_php_slow]
+type = "remap"
+inputs = ["php_slow_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "php-slow"
+  .level = "WARNING"
+'''
+
 # ------------------------------------------------------------------------------
 # 3. SINKS (Output to LogAnalyzer Backend API)
 # ------------------------------------------------------------------------------
 
 [sinks.loganalyzer_backend]
 type = "http"
-inputs = ["tag_metrics", "tag_nginx", "tag_syslog"]
-# Pointing to the Tailscale IP or Docker host of the Backend
-uri = "http://localhost:3001/api/ingest"
+inputs = ["tag_metrics", "tag_nginx", "tag_syslog", "tag_php_fpm", "tag_php_slow"]
+# Pointing to the IP of the machine hosting the Backend in OpenVPN subnet
+uri = "http://${BACKEND_OPENVPN_IP}:3001/api/ingest"
 encoding.codec = "json"
 method = "post"
 compression = "gzip"
