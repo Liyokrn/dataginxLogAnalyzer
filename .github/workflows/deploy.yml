@@ -45,7 +45,6 @@ jobs:
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: latest
 
       - name: Sync and Deploy via Alpine Container
         uses: docker://alpine:latest
@@ -73,7 +72,6 @@ jobs:
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-          version: latest
 
       - name: Configure Insecure Registry in Docker
         run: |
