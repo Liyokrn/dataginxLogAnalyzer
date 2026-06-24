@@ -120,9 +120,8 @@ inputs = ["tag_metrics", "tag_nginx", "tag_syslog", "tag_php_fpm", "tag_php_slow
 uri = "${BACKEND_URL}"
 encoding.codec = "json"
 method = "post"
-compression = "gzip"
 
-[sinks.loganalyzer_backend.headers]
+[sinks.loganalyzer_backend.request.headers]
 Authorization = "Bearer ${INGEST_API_KEY}"
 
 [sinks.loganalyzer_backend.batch]

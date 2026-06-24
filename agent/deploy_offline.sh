@@ -63,7 +63,9 @@ fi
 
 # 4. Copiar archivo de configuración vector.toml
 echo -e "==> Copiando configuración vector.toml..."
-sudo mkdir -p /etc/vector
+echo "📂 Creando directorios y asignando permisos..."
+sudo mkdir -p /etc/vector /var/lib/vector
+sudo chown -R root:root /var/lib/vector
 if [ -f "./vector.toml" ]; then
   sudo cp ./vector.toml /etc/vector/vector.toml
   echo -e "  ${GREEN}✔ Configuración instalada en /etc/vector/vector.toml${NC}"

@@ -81,6 +81,11 @@ server.post('/api/ingest', async (request, reply) => {
     const metricRows: any[] = [];
 
     for (const event of events) {
+      // Ignore Vector metrics so they don't pollute logs_main as "unknown"
+      if (event.name && (event.counter || event.gauge || event.kind)) {
+        continue;
+      }
+
       if (event.service_type === 'host_metrics') {
         const timestamp = event.timestamp ? new Date(event.timestamp).toISOString().replace('T', ' ').substring(0, 19) : new Date().toISOString().replace('T', ' ').substring(0, 19);
         const metricKeys = ['cpu_percent', 'memory_used_bytes', 'disk_used_percent', 'network_rx_bytes', 'cpu', 'memory'];

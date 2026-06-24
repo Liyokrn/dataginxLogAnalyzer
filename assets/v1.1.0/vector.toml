@@ -1,0 +1,129 @@
+# ------------------------------------------------------------------------------
+# Vector Configuration for LogAnalyzer (QA Environment)
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# 1. SOURCES
+# ------------------------------------------------------------------------------
+
+# -- A. Host Metrics (CPU, RAM, Disk, Network) --
+[sources.host_metrics]
+type = "host_metrics"
+collectors = ["cpu", "memory", "disk", "network"]
+scrape_interval_secs = 15
+
+# -- B. Nginx Logs (Access & Error) --
+[sources.nginx_logs]
+type = "file"
+include = ["${NGINX_LOG_PATH:-/var/log/nginx/*.log}"]
+read_from = "end"
+
+# -- C. Ubuntu Syslog --
+[sources.syslog]
+type = "file"
+include = ["/var/log/syslog"]
+read_from = "end"
+
+# -- D. PHP-FPM Logs --
+[sources.php_fpm_logs]
+type = "file"
+include = ["${PHP_FPM_LOG_PATH:-/var/log/php*-fpm.log}"]
+read_from = "end"
+
+# -- E. PHP Slow Logs (Multiline) --
+[sources.php_slow_logs]
+type = "file"
+include = ["${PHP_SLOW_LOG_PATH:-/var/log/php*-slow.log}"]
+read_from = "end"
+
+[sources.php_slow_logs.multiline]
+start_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
+mode = "halt_before"
+condition_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
+timeout_ms = 1000
+
+# ------------------------------------------------------------------------------
+# 2. TRANSFORMS (Static Tagging at Source)
+# ------------------------------------------------------------------------------
+
+# -- Tag Metrics --
+[transforms.tag_metrics]
+type = "remap"
+inputs = ["host_metrics"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "host_metrics"
+'''
+
+# -- Tag Nginx Logs --
+[transforms.tag_nginx]
+type = "remap"
+inputs = ["nginx_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "nginx"
+  .level = "INFO" # Default level for access logs, error logs will override this in backend pipeline
+'''
+
+# -- Tag Syslog --
+[transforms.tag_syslog]
+type = "remap"
+inputs = ["syslog"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "syslog"
+  .level = "INFO"
+'''
+
+# -- Tag PHP-FPM Logs --
+[transforms.tag_php_fpm]
+type = "remap"
+inputs = ["php_fpm_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "php-fpm"
+  .level = "INFO"
+'''
+
+# -- Tag PHP Slow Logs --
+[transforms.tag_php_slow]
+type = "remap"
+inputs = ["php_slow_logs"]
+source = '''
+  .project_id = "proyecto_x"
+  .env = "QA"
+  .os = "linux"
+  .source_node = "Q1"
+  .service_type = "php-slow"
+  .level = "WARNING"
+'''
+
+# ------------------------------------------------------------------------------
+# 3. SINKS (Output to LogAnalyzer Backend API)
+# ------------------------------------------------------------------------------
+
+[sinks.loganalyzer_backend]
+type = "http"
+inputs = ["tag_metrics", "tag_nginx", "tag_syslog", "tag_php_fpm", "tag_php_slow"]
+uri = "${BACKEND_URL}"
+encoding.codec = "json"
+method = "post"
+
+[sinks.loganalyzer_backend.request.headers]
+Authorization = "Bearer ${INGEST_API_KEY}"
+
+[sinks.loganalyzer_backend.batch]
+max_events = 1000
+timeout_secs = 5

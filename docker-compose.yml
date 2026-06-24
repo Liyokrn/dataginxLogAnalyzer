@@ -18,6 +18,7 @@ services:
   # 1. ClickHouse Database
   clickhouse:
     image: clickhouse/clickhouse-server:latest
+    pull_policy: never
     container_name: loganalyzer_clickhouse
     ports:
       - "0.0.0.0:8123:8123"
@@ -42,7 +43,11 @@ services:
 
   # 2. LogAnalyzer Backend API (Fastify)
   log-backend:
-    image: loganalyzer-backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: loganalyzer-log-backend:latest
+    pull_policy: never
     container_name: loganalyzer_backend
     ports:
       - "0.0.0.0:3001:3001"
@@ -72,6 +77,7 @@ services:
   # 3. LogAnalyzer Frontend (Next.js)
   log-frontend:
     image: loganalyzer-frontend:latest
+    pull_policy: never
     container_name: loganalyzer_frontend
     ports:
       - "0.0.0.0:3000:3000"  # Host: 3000 → Container: 3000

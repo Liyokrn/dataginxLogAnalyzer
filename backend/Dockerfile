@@ -44,4 +44,4 @@ COPY --from=builder /app/backend/dist ./backend/dist
 # Port for the Fastify server
 EXPOSE 3001
 
-CMD ["node", "backend/dist/src/index.js"]
+CMD ["node", "backend/dist/index.js"]
