@@ -151,10 +151,10 @@ function DashboardContent() {
   let targetTimeFormatted: string | undefined = undefined
 
   let stats = [
-    { title: "CPU Usage", icon: Cpu, value: "45%", status: "text-(--status-ok)", color: "#10B981", data: generateMockData(20, 30, 60), metricKey: 'cpu_percent' },
-    { title: "Memory", icon: Activity, value: "72%", status: "text-(--status-warn)", color: "#F59E0B", data: generateMockData(20, 60, 80), metricKey: 'memory_used_bytes' },
-    { title: "Network", icon: Network, value: "1.2 GB/s", status: "text-(--status-ok)", color: "#3B82F6", data: generateMockData(20, 0.8, 1.5), metricKey: 'network_rx' },
-    { title: "Storage", icon: HardDrive, value: "92%", status: "text-(--status-critical)", color: "#EF4444", data: generateMockData(20, 90, 95), metricKey: 'disk' },
+    { title: "CPU Usage", icon: Cpu, value: "45%", status: "text-(--status-ok)", color: "#449e62", data: generateMockData(20, 30, 60), metricKey: 'cpu_percent' },
+    { title: "Memory", icon: Activity, value: "72%", status: "text-(--status-warn)", color: "#c69a3b", data: generateMockData(20, 60, 80), metricKey: 'memory_used_bytes' },
+    { title: "Network", icon: Network, value: "1.2 GB/s", status: "text-(--status-ok)", color: "#6ba4e8", data: generateMockData(20, 0.8, 1.5), metricKey: 'network_rx' },
+    { title: "Storage", icon: HardDrive, value: "92%", status: "text-(--status-critical)", color: "#cf5d5d", data: generateMockData(20, 90, 95), metricKey: 'disk' },
   ]
 
   if (metricData && metricData.metrics) {
@@ -250,20 +250,20 @@ function DashboardContent() {
                 <AreaChart data={volumeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorInfo" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#6ba4e8" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#6ba4e8" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorWarning" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#c69a3b" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#c69a3b" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorError" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#cf5d5d" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#cf5d5d" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorCritical" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#9f7be6" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#9f7be6" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" />
@@ -271,10 +271,10 @@ function DashboardContent() {
                   <YAxis stroke="#6B7280" style={{ fontSize: 10 }} />
                   <Tooltip contentStyle={{ backgroundColor: '#161b22', borderColor: '#30363d', fontSize: 11 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area type="monotone" dataKey="INFO" stroke="#3B82F6" fillOpacity={1} fill="url(#colorInfo)" />
-                  <Area type="monotone" dataKey="WARNING" stroke="#F59E0B" fillOpacity={1} fill="url(#colorWarning)" />
-                  <Area type="monotone" dataKey="ERROR" stroke="#EF4444" fillOpacity={1} fill="url(#colorError)" />
-                  <Area type="monotone" dataKey="CRITICAL" stroke="#8B5CF6" fillOpacity={1} fill="url(#colorCritical)" />
+                  <Area type="monotone" dataKey="INFO" stroke="#6ba4e8" fillOpacity={1} fill="url(#colorInfo)" />
+                  <Area type="monotone" dataKey="WARNING" stroke="#c69a3b" fillOpacity={1} fill="url(#colorWarning)" />
+                  <Area type="monotone" dataKey="ERROR" stroke="#cf5d5d" fillOpacity={1} fill="url(#colorError)" />
+                  <Area type="monotone" dataKey="CRITICAL" stroke="#9f7be6" fillOpacity={1} fill="url(#colorCritical)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -300,9 +300,9 @@ function DashboardContent() {
                   <XAxis dataKey="name" stroke="#6B7280" style={{ fontSize: 9 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 10 }} />
                   <Tooltip contentStyle={{ backgroundColor: '#161b22', borderColor: '#30363d', fontSize: 11 }} />
-                  <Bar dataKey="errors" fill="#EF4444" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="errors" fill="#cf5d5d" radius={[4, 4, 0, 0]}>
                     {errorsByModuleData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index === 0 ? '#EF4444' : '#F59E0B'} />
+                      <Cell key={`cell-${index}`} fill={index === 0 ? '#cf5d5d' : '#c69a3b'} />
                     ))}
                   </Bar>
                 </BarChart>
