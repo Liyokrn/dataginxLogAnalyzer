@@ -34,18 +34,20 @@
 
 ---
 
-## Paso 1 — Construir y Guardar la Imagen del Frontend (En tu PC Local)
+## Paso 1 — Construir y Guardar las Imágenes (En tu PC Local)
 
-Dado que el servidor no cuenta con conexión a internet para descargar dependencias de npm, debemos construir y empaquetar la imagen de Next.js localmente antes de transferirla.
+Dado que el servidor no cuenta con conexión a internet para descargar dependencias de npm, debemos construir y empaquetar las imágenes del backend y frontend localmente antes de transferirlas.
 
 Ejecuta en la raíz del repositorio de tu PC local:
 
 ```bash
-# 1. Construir la imagen del frontend con la IP del servidor configurada para websockets
+# 1. Construir e imagen del frontend
 docker build --build-arg NEXT_PUBLIC_WS_URL=ws://10.100.225.249:3001/ws -t loganalyzer-frontend:latest -f apps/web/Dockerfile .
-
-# 2. Exportar la imagen construida a un archivo .tar
 docker save loganalyzer-frontend:latest -o loganalyzer-frontend.tar
+
+# 2. Construir e imagen del backend
+docker build -t loganalyzer-backend:latest -f backend/Dockerfile .
+docker save loganalyzer-backend:latest -o loganalyzer-backend.tar
 ```
 
 ---
@@ -55,8 +57,9 @@ docker save loganalyzer-frontend:latest -o loganalyzer-frontend.tar
 Desde tu PC local (con la VPN conectada), ejecuta:
 
 ```bash
-# Subir la imagen tar del frontend y archivos de configuración
+# Subir las imágenes tar y archivos de configuración
 scp loganalyzer-frontend.tar \
+    loganalyzer-backend.tar \
     docker-compose.yml \
     .env \
     agent-config/check_ports.sh \
@@ -77,9 +80,10 @@ Conéctate vía SSH al servidor `10.100.225.249` y carga la imagen en Docker:
 # Conectar por SSH
 ssh ly@10.100.225.249
 
-# Cargar la imagen del frontend en Docker y limpiar el archivo temporal
+# Cargar las imágenes en Docker y limpiar los archivos temporales
 docker load -i /tmp/loganalyzer-frontend.tar
-rm /tmp/loganalyzer-frontend.tar
+docker load -i /tmp/loganalyzer-backend.tar
+rm /tmp/loganalyzer-frontend.tar /tmp/loganalyzer-backend.tar
 ```
 
 ---
@@ -122,7 +126,7 @@ chmod +x check_ports.sh
 cd /opt/loganalyzer
 
 # Iniciar los servicios (ClickHouse, Backend y Frontend) en segundo plano
-docker compose up -d --build
+docker compose up -d
 ```
 
 ### Verificar que todo está corriendo
