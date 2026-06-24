@@ -15,7 +15,7 @@ scrape_interval_secs = 15
 # -- B. Nginx Logs (Access & Error) --
 [sources.nginx_logs]
 type = "file"
-include = ["/var/log/nginx/access.log", "/var/log/nginx/error.log"]
+include = ["${NGINX_LOG_PATH:-/var/log/nginx/*.log}"]
 read_from = "end"
 
 # -- C. Ubuntu Syslog --
@@ -27,19 +27,20 @@ read_from = "end"
 # -- D. PHP-FPM Logs --
 [sources.php_fpm_logs]
 type = "file"
-include = ["/var/log/php*-fpm.log"]
+include = ["${PHP_FPM_LOG_PATH:-/var/log/php*-fpm.log}"]
 read_from = "end"
 
 # -- E. PHP Slow Logs (Multiline) --
 [sources.php_slow_logs]
 type = "file"
-include = ["/var/log/php*-slow.log"]
+include = ["${PHP_SLOW_LOG_PATH:-/var/log/php*-slow.log}"]
 read_from = "end"
 
 [sources.php_slow_logs.multiline]
 start_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
 mode = "halt_before"
 condition_pattern = '^\[\d{2}-[a-zA-Z]{3}-\d{4}'
+timeout_ms = 1000
 
 # ------------------------------------------------------------------------------
 # 2. TRANSFORMS (Static Tagging at Source)
@@ -116,11 +117,13 @@ source = '''
 [sinks.loganalyzer_backend]
 type = "http"
 inputs = ["tag_metrics", "tag_nginx", "tag_syslog", "tag_php_fpm", "tag_php_slow"]
-# Pointing to the internal IP of the SonarQube Server hosting the Backend
-uri = "http://${BACKEND_INTERNAL_IP}:3001/api/ingest"
+uri = "${BACKEND_URL}"
 encoding.codec = "json"
 method = "post"
 compression = "gzip"
+
+[sinks.loganalyzer_backend.headers]
+Authorization = "Bearer ${INGEST_API_KEY}"
 
 [sinks.loganalyzer_backend.batch]
 max_events = 1000

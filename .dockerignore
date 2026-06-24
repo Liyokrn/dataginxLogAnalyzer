@@ -1,0 +1,16 @@
+.git
+node_modules
+**/node_modules
+apps/web/node_modules
+apps/web/.next
+backend/node_modules
+backend/dist
+packages/*/node_modules
+*.log
+*.tar
+.gemini
+.idea
+.vscode
+dist
+tmp
+out

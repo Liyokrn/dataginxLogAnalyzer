@@ -21,3 +21,7 @@ Thumbs.db
 # local env files
 .env*.local
 .env
+
+# Docker image exports
+*.tar
+!agent/*.tar.gz

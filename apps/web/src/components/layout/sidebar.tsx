@@ -11,7 +11,8 @@ import {
   Waypoints,
   Settings,
   ChevronDown,
-  Box
+  Box,
+  Bot
 } from "lucide-react"
 
 const navigation = [
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Log Console", href: "/logs", icon: Terminal },
   { name: "Infrastructure", href: "/infrastructure", icon: Server },
   { name: "Pipeline Editor", href: "/pipeline", icon: Waypoints },
+  { name: "Active Agents", href: "/agents", icon: Bot },
 ]
 
 const modules = [

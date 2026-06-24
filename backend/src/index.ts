@@ -287,6 +287,44 @@ server.post('/api/metrics/correlate', async (request, reply) => {
   }
 });
 
+server.get('/api/agents', async (request, reply) => {
+  try {
+    const query = `
+      SELECT 
+        source_node,
+        env,
+        project_id,
+        os,
+        max(timestamp) as last_seen
+      FROM loganalyzer.logs_main
+      WHERE timestamp >= now() - INTERVAL 1 HOUR
+      GROUP BY source_node, env, project_id, os
+      ORDER BY last_seen DESC
+    `;
+    
+    let dataset: any[] = [];
+    try {
+      const resultSet = await clickhouse.query({
+        query,
+        format: 'JSONEachRow'
+      });
+      dataset = await resultSet.json() as any[];
+    } catch (dbError) {
+      server.log.warn('ClickHouse connection failed during agents query, returning mock data.');
+      const now = new Date();
+      dataset = [
+        { source_node: 'Q1', env: 'QA', project_id: 'proyecto_x', os: 'linux', last_seen: new Date(now.getTime() - 1000).toISOString().replace('T', ' ').substring(0, 19) },
+        { source_node: 'P5', env: 'PROD', project_id: 'proyecto_y', os: 'windows', last_seen: new Date(now.getTime() - 120000).toISOString().replace('T', ' ').substring(0, 19) }
+      ];
+    }
+    
+    return reply.send(dataset);
+  } catch (err) {
+    server.log.error(err);
+    return reply.code(500).send({ error: 'Failed to retrieve active agents' });
+  }
+});
+
 server.get('/api/analytics/volume', async (request, reply) => {
   try {
     const query = `

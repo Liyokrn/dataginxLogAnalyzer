@@ -1,13 +1,26 @@
-version: '3.8'
+###############################################################################
+# docker-compose.backend.yml
+# -----------------------------------------------------------------------------
+# Backend de LogAnalyzer: ClickHouse + API Fastify
+# Servidor destino: 10.100.225.249 (SonarQube Server), usuario SSH: ly
+#
+# Puertos expuestos a 0.0.0.0 para recibir tráfico de agentes QA/PROD:
+#   - 3001  → Backend API (ingesta de logs + API del frontend)
+#   - 8123  → ClickHouse HTTP Interface
+#   - 9001  → ClickHouse Native TCP (remapeado de 9000, SonarQube ocupa 9000)
+#
+# Uso:
+#   docker compose -f docker-compose.backend.yml up -d --build
+###############################################################################
 
 services:
-  # 1. ClickHouse Database (Housed privately inside Docker network, exposed internally)
+  # 1. ClickHouse Database
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: loganalyzer_clickhouse
     ports:
       - "0.0.0.0:8123:8123"
-      - "0.0.0.0:9000:9000"
+      - "0.0.0.0:9001:9000"  # Host:9001 → Container:9000 (SonarQube usa 9000)
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
@@ -16,10 +29,17 @@ services:
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-default}
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
     networks:
       - loganalyzer_net
 
-  # 2. LogAnalyzer Backend API (Listening to internal QA/PROD ingestion and internal frontend)
+  # 2. LogAnalyzer Backend API (Fastify)
   log-backend:
     build:
       context: .
@@ -38,7 +58,15 @@ services:
       - FRONTEND_API_KEY=${FRONTEND_API_KEY}
       - INGEST_API_KEY=${INGEST_API_KEY}
     depends_on:
-      - clickhouse
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
     networks:
       - loganalyzer_net
 
