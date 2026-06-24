@@ -116,8 +116,8 @@ source = '''
 [sinks.loganalyzer_backend]
 type = "http"
 inputs = ["tag_metrics", "tag_nginx", "tag_syslog", "tag_php_fpm", "tag_php_slow"]
-# Pointing to the IP of the machine hosting the Backend in OpenVPN subnet
-uri = "http://${BACKEND_OPENVPN_IP}:3001/api/ingest"
+# Pointing to the internal IP of the SonarQube Server hosting the Backend
+uri = "http://${BACKEND_INTERNAL_IP}:3001/api/ingest"
 encoding.codec = "json"
 method = "post"
 compression = "gzip"

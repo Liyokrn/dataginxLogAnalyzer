@@ -1,10 +1,13 @@
 version: '3.8'
 
 services:
-  # 1. ClickHouse Database (Housed privately inside Docker network)
+  # 1. ClickHouse Database (Housed privately inside Docker network, exposed internally)
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: loganalyzer_clickhouse
+    ports:
+      - "0.0.0.0:8123:8123"
+      - "0.0.0.0:9000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
@@ -16,14 +19,14 @@ services:
     networks:
       - loganalyzer_net
 
-  # 2. LogAnalyzer Backend API (Listening to OpenVPN ingestion and Cloudflare frontend)
+  # 2. LogAnalyzer Backend API (Listening to internal QA/PROD ingestion and internal frontend)
   log-backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: loganalyzer_backend
     ports:
-      - "3002:3001"
+      - "0.0.0.0:3001:3001"
     environment:
       - PORT=3001
       - HOST=0.0.0.0
