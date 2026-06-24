@@ -199,7 +199,7 @@ function DashboardContent() {
         <button
           onClick={fetchAnalytics}
           disabled={analyticsLoading}
-          className="flex items-center gap-1.5 text-xs bg-[#0A0E17] border border-gray-800 hover:border-gray-600 text-gray-400 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs bg-(--background) border border-(--border) hover:border-gray-600 text-gray-400 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`h-3 w-3 ${analyticsLoading ? 'animate-spin' : ''}`} />
           Refresh Charts
@@ -269,7 +269,7 @@ function DashboardContent() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" />
                   <XAxis dataKey="time" stroke="#6B7280" style={{ fontSize: 10 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#05080F', borderColor: '#1F2937', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#161b22', borderColor: '#30363d', fontSize: 11 }} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Area type="monotone" dataKey="INFO" stroke="#3B82F6" fillOpacity={1} fill="url(#colorInfo)" />
                   <Area type="monotone" dataKey="WARNING" stroke="#F59E0B" fillOpacity={1} fill="url(#colorWarning)" />
@@ -299,7 +299,7 @@ function DashboardContent() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" />
                   <XAxis dataKey="name" stroke="#6B7280" style={{ fontSize: 9 }} />
                   <YAxis stroke="#6B7280" style={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#05080F', borderColor: '#1F2937', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#161b22', borderColor: '#30363d', fontSize: 11 }} />
                   <Bar dataKey="errors" fill="#EF4444" radius={[4, 4, 0, 0]}>
                     {errorsByModuleData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={index === 0 ? '#EF4444' : '#F59E0B'} />

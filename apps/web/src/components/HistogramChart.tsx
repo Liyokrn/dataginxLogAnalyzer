@@ -17,9 +17,9 @@ export function HistogramChart({ data, times }: HistogramChartProps) {
     backgroundColor: "transparent",
     tooltip: {
       trigger: "axis",
-      backgroundColor: isDark ? "#111827" : "#FFFFFF",
-      borderColor: isDark ? "rgba(234, 230, 223, 0.1)" : "rgba(10, 14, 23, 0.1)",
-      textStyle: { color: isDark ? "#EAE6DF" : "#0A0E17" },
+      backgroundColor: isDark ? "#161b22" : "#FFFFFF",
+      borderColor: isDark ? "rgba(48, 54, 61, 0.7)" : "rgba(13, 17, 23, 0.1)",
+      textStyle: { color: isDark ? "#e6edf3" : "#0d1117" },
     },
     grid: {
       left: "0",

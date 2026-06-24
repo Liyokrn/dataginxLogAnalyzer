@@ -117,7 +117,7 @@ export default function PipelineEditorPage() {
 
         {/* Right Col: Editor & Preview */}
         <div className="flex-1 flex flex-col gap-4 overflow-hidden border border-(--border) rounded-xl bg-(--card)">
-          <div className="border-b border-(--border) p-4 bg-[#0A0E17] flex justify-between items-center">
+          <div className="border-b border-(--border) p-4 bg-(--background) flex justify-between items-center">
             <h2 className="font-semibold">Parse Configuration: Regex Matcher</h2>
             
             {/* Presets Quick Load */}
@@ -130,7 +130,7 @@ export default function PipelineEditorPage() {
                   className={`text-xs px-2.5 py-1 rounded border transition-colors ${
                     serviceType === preset.service_type
                       ? "bg-blue-600/20 border-blue-500 text-blue-400"
-                      : "bg-[#0A0E17] border-gray-800 text-gray-400 hover:border-gray-600"
+                      : "bg-(--background) border-(--border) text-gray-400 hover:border-gray-600"
                   }`}
                 >
                   {preset.name.split(' ')[0]}
@@ -146,7 +146,7 @@ export default function PipelineEditorPage() {
                 <select
                   value={serviceType}
                   onChange={(e) => setServiceType(e.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-[#05080F] p-3 text-sm focus:border-blue-500 focus:outline-none text-gray-300"
+                  className="w-full rounded-md border border-(--border) bg-(--background) p-3 text-sm focus:border-blue-500 focus:outline-none text-gray-300"
                 >
                   <option value="nginx">nginx (Nginx Access / Error)</option>
                   <option value="php-fpm">php-fpm (PHP-FPM Log)</option>
@@ -160,7 +160,7 @@ export default function PipelineEditorPage() {
                   type="text"
                   value={pattern}
                   onChange={(e) => setPattern(e.target.value)}
-                  className="w-full rounded-md border border-(--border) bg-[#05080F] p-3 text-sm font-mono focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-md border border-(--border) bg-(--background) p-3 text-sm font-mono focus:border-blue-500 focus:outline-none"
                   placeholder="e.g., /var/www/(?<modulo>[a-zA-Z0-9-]+)"
                 />
               </div>
@@ -182,7 +182,7 @@ export default function PipelineEditorPage() {
                 value={testLog}
                 onChange={(e) => setTestLog(e.target.value)}
                 rows={4}
-                className="w-full rounded-md border border-(--border) bg-[#05080F] p-3 text-sm font-mono focus:border-blue-500 focus:outline-none resize-none text-gray-300"
+                className="w-full rounded-md border border-(--border) bg-(--background) p-3 text-sm font-mono focus:border-blue-500 focus:outline-none resize-none text-gray-300"
               />
             </div>
 
@@ -197,11 +197,11 @@ export default function PipelineEditorPage() {
               {/* Local Regex Match */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-400">Local Regex Preview Match</label>
-                <div className="rounded-md border border-(--border) bg-[#05080F] p-4 font-mono text-sm min-h-[140px] flex flex-col justify-start">
+                <div className="rounded-md border border-(--border) bg-(--background) p-4 font-mono text-sm min-h-[140px] flex flex-col justify-start">
                   {localExtracted.length > 0 ? (
                     <div className="space-y-2">
                       {localExtracted.map(([key, val]) => (
-                        <div key={key} className="flex gap-4 border-b border-gray-800 pb-2 last:border-0 last:pb-0">
+                        <div key={key} className="flex gap-4 border-b border-(--border) pb-2 last:border-0 last:pb-0">
                           <span className="text-blue-400 w-24 flex-shrink-0">"{key}":</span>
                           <span className="text-green-400">"{val}"</span>
                         </div>
@@ -216,21 +216,21 @@ export default function PipelineEditorPage() {
               {/* Backend Parser Execution Output */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-400">Backend Live Parser Output</label>
-                <div className="rounded-md border border-blue-900/50 bg-[#060B14] p-4 font-mono text-sm min-h-[140px]">
+                <div className="rounded-md border border-blue-900/50 bg-(--background) p-4 font-mono text-sm min-h-[140px]">
                   {extractedResult ? (
                     <div className="space-y-2 text-xs">
-                      <div className="flex gap-4 border-b border-gray-800 pb-1.5">
+                      <div className="flex gap-4 border-b border-(--border) pb-1.5">
                         <span className="text-blue-400 w-32 flex-shrink-0">extracted_module:</span>
                         <span className="text-green-400 font-bold">"{extractedResult.extracted_module || "(null)"}"</span>
                       </div>
-                      <div className="flex gap-4 border-b border-gray-800 pb-1.5">
+                      <div className="flex gap-4 border-b border-(--border) pb-1.5">
                         <span className="text-blue-400 w-32 flex-shrink-0">level:</span>
                         <span className={`font-semibold ${
                           extractedResult.level === 'ERROR' ? 'text-red-400' :
                           extractedResult.level === 'WARNING' ? 'text-yellow-400' : 'text-green-400'
                         }`}>"{extractedResult.level}"</span>
                       </div>
-                      <div className="flex gap-4 border-b border-gray-800 pb-1.5">
+                      <div className="flex gap-4 border-b border-(--border) pb-1.5">
                         <span className="text-blue-400 w-32 flex-shrink-0">timestamp (ISO):</span>
                         <span className="text-purple-400">"{extractedResult.timestamp}"</span>
                       </div>

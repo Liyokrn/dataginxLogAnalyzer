@@ -125,8 +125,8 @@ export default function LogsPage() {
       </div>
 
       {/* Terminal-style Log List */}
-      <div className="flex-1 rounded-xl border border-(--border) bg-[#05080F] overflow-hidden flex flex-col shadow-inner">
-        <div className="flex items-center justify-between border-b border-(--border) bg-[#0A0E17] px-4 py-2 text-xs font-mono text-gray-400 uppercase tracking-wider">
+      <div className="flex-1 rounded-xl border border-(--border) bg-(--card) overflow-hidden flex flex-col shadow-inner">
+        <div className="flex items-center justify-between border-b border-(--border) bg-(--background) px-4 py-2 text-xs font-mono text-gray-400 uppercase tracking-wider">
           <div className="w-10"></div>
           <div className="w-40">Timestamp</div>
           <div className="w-24">Level</div>
@@ -162,7 +162,7 @@ export default function LogsPage() {
                     <div className={`flex-1 break-all ${levelColor} opacity-90`}>{log.message}</div>
                   </div>
                   {isExpanded && (
-                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-[#0A0E17] border border-(--border) p-4 flex flex-col gap-3">
+                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-(--background) border border-(--border) p-4 flex flex-col gap-3">
                       <div className="overflow-x-auto text-gray-300">
                         <pre className="text-xs">
                           {JSON.stringify(log.metadata, null, 2)}
