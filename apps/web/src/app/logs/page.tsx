@@ -95,20 +95,20 @@ export default function LogsPage() {
             </div>
             <input
               type="text"
-              className="block w-full rounded-md border border-(--border) bg-(--card) py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+              className="block w-full rounded-md border border-(--border) bg-(--background) py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 font-mono"
               placeholder='modulo:nomina AND level:INFO'
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <button className="flex items-center gap-2 rounded-md border border-(--border) bg-(--card) px-4 py-2 text-sm font-medium hover:bg-(--accent)">
+          <button className="flex items-center gap-2 rounded-md border border-(--border) bg-(--card) px-4 py-2 text-sm font-medium hover:bg-(--accent) transition-colors">
             <Filter className="h-4 w-4" />
-            Filters
+            Filtros
           </button>
           <button 
             onClick={() => setIsLive(!isLive)}
             className={`flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
-              isLive ? "bg-blue-900/20 border-blue-800 text-blue-400" : "border-(--border) bg-(--card) hover:bg-(--accent)"
+              isLive ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "border-(--border) bg-(--card) hover:bg-(--accent)"
             }`}
           >
             {isLive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -125,8 +125,8 @@ export default function LogsPage() {
       </div>
 
       {/* Terminal-style Log List */}
-      <div className="flex-1 rounded-xl border border-(--border) bg-(--card) overflow-hidden flex flex-col shadow-inner">
-        <div className="flex items-center justify-between border-b border-(--border) bg-(--background) px-4 py-2 text-xs font-mono text-gray-400 uppercase tracking-wider">
+      <div className="flex-1 rounded-md border border-(--border) bg-black overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between border-b border-(--border) bg-(--card) px-4 py-2 text-xs font-mono text-gray-400 uppercase tracking-wider">
           <div className="w-10"></div>
           <div className="w-40">Timestamp</div>
           <div className="w-24">Level</div>
@@ -159,10 +159,10 @@ export default function LogsPage() {
                     <div className="w-40 text-gray-500 flex-shrink-0">{log.timestamp}</div>
                     <div className={`w-24 font-bold ${levelColor} flex-shrink-0`}>{log.level}</div>
                     <div className="w-32 text-gray-400 flex-shrink-0">{log.source}</div>
-                    <div className={`flex-1 break-all ${levelColor} opacity-90`}>{log.message}</div>
+                    <div className={`flex-1 break-all text-gray-300 opacity-90`}>{log.message}</div>
                   </div>
                   {isExpanded && (
-                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-(--background) border border-(--border) p-4 flex flex-col gap-3">
+                    <div className="ml-8 mr-2 mb-2 mt-1 rounded-md bg-(--card) border border-(--border) p-4 flex flex-col gap-3">
                       <div className="overflow-x-auto text-gray-300">
                         <pre className="text-xs">
                           {JSON.stringify(log.metadata, null, 2)}
@@ -174,7 +174,7 @@ export default function LogsPage() {
                             e.stopPropagation();
                             window.location.href = `/?correlate_time=${encodeURIComponent(log.timestamp)}&correlate_node=${encodeURIComponent(log.source)}`;
                           }}
-                          className="flex items-center gap-2 text-xs font-medium text-blue-400 hover:text-blue-300 bg-blue-900/20 px-3 py-1.5 rounded transition-colors"
+                          className="flex items-center gap-2 text-xs font-medium text-(--foreground) hover:bg-(--accent) border border-(--border) px-3 py-1.5 rounded-md transition-colors"
                         >
                           <Play className="h-3 w-3" />
                           Correlacionar Métricas
